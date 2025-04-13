@@ -6,9 +6,9 @@ This GitHub repo contains the code and documentation for setting up a complete A
 
 ## Requirements
 
-- VirtualBox
+- Oracle VirtualBox
 - Windows 10 ISO
-- Windows Server 2019 ISO
+- Windows Server 2022 ISO
 - Minimum 16GB RAM (32GB Recommended)
 - 100GB+ Storage
 
@@ -20,35 +20,35 @@ This GitHub repo contains the code and documentation for setting up a complete A
 
 | VM Name       | OS                  | Purpose                        | Network Adapter             |
 |--------------|---------------------|--------------------------------|-----------------------------|
-| `DC-Server`  | Windows Server 2019 | AD, DNS, DHCP, NAT             | Adapter 1: NAT, Adapter 2: Internal |
+| `DC-Server`  | Windows Server 2022 | AD, DNS, DHCP, NAT, RAS             | Adapter 1: NAT, Adapter 2: Internal |
 | `Win10-Client` | Windows 10         | Domain Joined Client           | Adapter 1: Internal         |
 
 ---
 
 ## Instructions
 
-### 1. Install VirtualBox
+### 1. Install Oracle VirtualBox
 
-Download and install from: [https://www.virtualbox.org/](https://www.virtualbox.org/)
+[Download and install](https://www.virtualbox.org/)
 
 ---
 
 ### 2. Download ISOs
 
 - Windows 10 ISO: [Download](https://www.microsoft.com/en-us/software-download/windows10)
-- Windows Server 2019 ISO: [Download](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2019)
+- Windows Server 2022 ISO: [Download](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022)
 
 ---
 
 ### 3. Create Virtual Machines
 
-#### Domain Controller VM (DC-Server)
+#### Domain Controller VM (DC)
 
 - Set up two network adapters:
   - Adapter 1: NAT (for internet)
   - Adapter 2: Internal Network (`InternalNet`)
-- Install Windows Server 2019
-- Rename to `DC-Server`
+- Install Windows Server 2022
+- Rename to `DC`
 
 #### Client VM (Win10-Client)
 
@@ -70,10 +70,10 @@ Install-WindowsFeature AD-Domain-Services -IncludeManagementTools
 ### Promote Server to Domain Controller
 
 ```powershell
-Install-ADDSForest -DomainName "corp.local" -DomainNetbiosName "CORP"
+Install-ADDSForest -DomainName "mydomain.com" -DomainNetbiosName "CORP"
 ```
 
-- After reboot, FQDN: `corp.local`
+- After reboot, FQDN: `mydomain.com`
 
 ---
 
@@ -81,7 +81,7 @@ Install-ADDSForest -DomainName "corp.local" -DomainNetbiosName "CORP"
 
 - Add Remote Access role via Server Manager
 - Use Routing and Remote Access (RRAS) to enable NAT on the external adapter (NAT)
-- Internal adapter IP: `192.168.10.1`
+- Internal adapter IP: `172.16.0.1`
 
 ---
 
@@ -95,8 +95,8 @@ Install-WindowsFeature DHCP -IncludeManagementTools
 
 ### Add DHCP Scope
 
-```powershell
-Add-DhcpServerv4Scope -Name "InternalScope" -StartRange 192.168.10.100 -EndRange 192.168.10.200 -SubnetMask 255.255.255.0
+``DHCP Scope
+Add-DhcpServerv4Scope -Name "InternalScope" -StartRange 172.16.0.100 -EndRange 172.16.0.200 -SubnetMask 255.255.255.0
 ```
 
 - Authorize DHCP and start the service
@@ -107,12 +107,29 @@ Add-DhcpServerv4Scope -Name "InternalScope" -StartRange 192.168.10.100 -EndRange
 
 Create a script file `Create-Users.ps1`:
 
+## Edit these varibale for your own use case
+
 ```powershell
-Import-Module ActiveDirectory
-for ($i = 1; $i -le 1000; $i++) {
-    $username = "User$i"
-    $password = ConvertTo-SecureString "P@ssw0rd123" -AsPlainText -Force
-    New-ADUser -Name $username -SamAccountName $username -AccountPassword $password -Enabled $true -Path "OU=Users,DC=corp,DC=local"
+$password_for_users = "Password1"
+$USER_FIRST_LAST_LIST = Get-content .\name.text #this is to used if you have name tored in text file
+##---------------------------------------
+$password = ConverTo-securesstring $PASSWORD_USERS -AsPlainText -Force
+New-ADOrganizationalUnit -name_USERS -ProtectedFromAccidentalDeletion $false
+
+foreach ($n in $User_FIRST_LAST_LIST) {
+  $First = $n.split (" ") [0] . ToLower ()
+  $Last = 4n.split (" ") [1] . ToLowr ()
+  $username = "$($first.substring(0,1)$($last)".ToLowwer()
+  writ-Host "Creating user: $($username)" -backroundcolor Black -Foregroundcolor Cyan #you can set any color you want here
+
+  new-AdUser -AccountPassowrd $Password `
+             -givenname $first `
+             -surname $last `
+             -DisplayName $usrname `
+             -name $username `
+             -EmplayeeID $username `
+             -PasswordnverExpires $true #can be change 
+             =path "ou=_USERS,$(([ADSI] `"") .distingushedName)" `
 }
 ```
 
@@ -125,7 +142,7 @@ for ($i = 1; $i -le 1000; $i++) {
 - Set NIC to Internal Network
 - Boot and confirm IP is received from DHCP
 - Join the domain:
-  - Domain: `corp.local`
+  - Domain: `mydomain.com`
   - Use domain admin credentials
 
 ---
@@ -135,7 +152,7 @@ for ($i = 1; $i -le 1000; $i++) {
 Ensure that the client:
 
 - Receives a valid IP from DHCP
-- Can ping `DC-Server`
+- Can ping `DC`
 - Has internet access through NAT
 - Can log in with a domain account
 
