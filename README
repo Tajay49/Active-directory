@@ -1,1 +1,162 @@
+# Active Directory Lab Environment
+
+This GitHub repo contains the code and documentation for setting up a complete Active Directory (AD) lab using VirtualBox, Windows Server 2019, and Windows 10. The goal is to simulate a basic enterprise environment for learning and testing AD, DHCP, DNS, and NAT configurations.
+
+---
+
+## Requirements
+
+- VirtualBox
+- Windows 10 ISO
+- Windows Server 2019 ISO
+- Minimum 16GB RAM (32GB Recommended)
+- 100GB+ Storage
+
+---
+
+## Lab Setup Overview
+
+### Virtual Machines
+
+| VM Name       | OS                  | Purpose                        | Network Adapter             |
+|--------------|---------------------|--------------------------------|-----------------------------|
+| `DC-Server`  | Windows Server 2019 | AD, DNS, DHCP, NAT             | Adapter 1: NAT, Adapter 2: Internal |
+| `Win10-Client` | Windows 10         | Domain Joined Client           | Adapter 1: Internal         |
+
+---
+
+## Instructions
+
+### 1. Install VirtualBox
+
+Download and install from: [https://www.virtualbox.org/](https://www.virtualbox.org/)
+
+---
+
+### 2. Download ISOs
+
+- Windows 10 ISO: [Download](https://www.microsoft.com/en-us/software-download/windows10)
+- Windows Server 2019 ISO: [Download](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2019)
+
+---
+
+### 3. Create Virtual Machines
+
+#### Domain Controller VM (DC-Server)
+
+- Set up two network adapters:
+  - Adapter 1: NAT (for internet)
+  - Adapter 2: Internal Network (`InternalNet`)
+- Install Windows Server 2019
+- Rename to `DC-Server`
+
+#### Client VM (Win10-Client)
+
+- One network adapter:
+  - Adapter 1: Internal Network (`InternalNet`)
+- Install Windows 10
+- Rename to `Win10-Client`
+
+---
+
+## Configure Domain Controller
+
+### Install Active Directory Domain Services
+
+```powershell
+Install-WindowsFeature AD-Domain-Services -IncludeManagementTools
+```
+
+### Promote Server to Domain Controller
+
+```powershell
+Install-ADDSForest -DomainName "corp.local" -DomainNetbiosName "CORP"
+```
+
+- After reboot, FQDN: `corp.local`
+
+---
+
+## Configure RAS/NAT
+
+- Add Remote Access role via Server Manager
+- Use Routing and Remote Access (RRAS) to enable NAT on the external adapter (NAT)
+- Internal adapter IP: `192.168.10.1`
+
+---
+
+## Set Up DHCP Server
+
+### Install DHCP Role
+
+```powershell
+Install-WindowsFeature DHCP -IncludeManagementTools
+```
+
+### Add DHCP Scope
+
+```powershell
+Add-DhcpServerv4Scope -Name "InternalScope" -StartRange 192.168.10.100 -EndRange 192.168.10.200 -SubnetMask 255.255.255.0
+```
+
+- Authorize DHCP and start the service
+
+---
+
+## PowerShell Script: Create 1000 Users
+
+Create a script file `Create-Users.ps1`:
+
+```powershell
+Import-Module ActiveDirectory
+for ($i = 1; $i -le 1000; $i++) {
+    $username = "User$i"
+    $password = ConvertTo-SecureString "P@ssw0rd123" -AsPlainText -Force
+    New-ADUser -Name $username -SamAccountName $username -AccountPassword $password -Enabled $true -Path "OU=Users,DC=corp,DC=local"
+}
+```
+
+> Make sure the OU `Users` exists before running.
+
+---
+
+## Configure Client VM
+
+- Set NIC to Internal Network
+- Boot and confirm IP is received from DHCP
+- Join the domain:
+  - Domain: `corp.local`
+  - Use domain admin credentials
+
+---
+
+## Final Verification
+
+Ensure that the client:
+
+- Receives a valid IP from DHCP
+- Can ping `DC-Server`
+- Has internet access through NAT
+- Can log in with a domain account
+
+---
+
+## Repository Structure
+
+```bash
+ActiveDirectory-Lab/
+├── Create-Users.ps1
+├── README.md
+└── Screenshots/         # Optional screenshots
+    ├── VM_Settings.png
+    ├── DHCP_Config.png
+    └── AD_Users.png
+```
+
+---
+
+## License
+
+This project is for educational use. Feel free to fork and modify!
+
 
