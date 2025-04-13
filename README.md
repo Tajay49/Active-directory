@@ -1,4 +1,4 @@
-# Active Directory Lab Environment
+## Active Directory Lab Environment
 
 This GitHub repo contains the code and documentation for setting up a complete Active Directory (AD) lab using VirtualBox, Windows Server 2019, and Windows 10. The goal is to simulate a basic enterprise environment for learning and testing AD, DHCP, DNS, and NAT configurations.
 
