@@ -154,12 +154,9 @@ Ensure that the client:
 
 ```bash
 ActiveDirectory-Lab/
-├── Create-Users.ps1
 ├── README.md
-└── Screenshots/         # Optional screenshots
-    ├── VM_Settings.png
-    ├── DHCP_Config.png
-    └── AD_Users.png
+├── PoweerShell
+└── Screenshots/
 ```
 
 ---
